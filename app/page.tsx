@@ -2,136 +2,106 @@
 // It's needed because we're using browser-specific features like 3D graphics and WebXR
 'use client';
 
+// useState lets the page "remember" values that change (day/night, hover hint)
+import { useState } from 'react';
+
 // Import required components for 3D rendering
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
-import { Model as PottedPlant } from './components/PottedPlant';
-import { Cube } from './components/Cube';
+import { OrbitControls } from '@react-three/drei';
+
+// Our interactive room (see app/components/Room.tsx)
+import { Room } from './components/Room';
 
 // Import XR components for WebXR functionality (AR/VR)
 import { XR, createXRStore, XROrigin } from '@react-three/xr';
 
 // Create an XR store that manages the WebXR session state
-// This store handles entering/exiting AR/VR modes and manages XR-specific functionality
 const store = createXRStore();
 
-// Main homepage component that renders our 3D scene with XR capabilities
+// Main homepage component
 export default function Home() {
+  // isNight: false = daytime (sun on), true = night (sun off, dark sky)
+  const [isNight, setIsNight] = useState(false);
+  // hint: the label of whatever the mouse is currently pointing at
+  const [hint, setHint] = useState<string | null>(null);
+
+  // Sky / background colors for day and night
+  const skyColor = isNight ? '#0d1424' : '#dfe9f2';
+
   return (
-    // Container div that takes up the full viewport (100% width and height)
-    <div style={{ width: '100vw', height: '100vh' }}>
-      
-      {/* 
-        Canvas is the main React Three Fiber component that creates a 3D scene
-        It sets up WebGL context and handles rendering
-        camera prop sets the initial camera position [x, y, z]
-        
-        The XR component will automatically provide the default "Enter XR" UI
-        which intelligently shows AR/VR options based on device capabilities
+    // Full-screen container. "position: relative" lets the UI float on top.
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', background: skyColor, transition: 'background 1s' }}>
+
+      {/*
+        CANVAS — the 3D scene
+        shadows: turns on shadow rendering
+        camera: starts outside the "cut-away" corner, looking into the room
       */}
-      <Canvas camera={{ position: [5, 5, 5] }}>
-        
-        {/* 
-          XR WRAPPER
-          The XR component enables WebXR functionality for everything inside it
-          It handles XR session management, input tracking, and rendering adjustments
-          
-          Using default settings which automatically:
-          - Shows the built-in "Enter XR" UI in the top center
-          - Detects device capabilities (AR/VR support)
-          - Provides appropriate options based on the device
-          - Handles session management and transitions
-        */}
+      <Canvas shadows camera={{ position: [5.5, 3.6, 6], fov: 45 }}>
+        {/* Set the scene background to match the sky color */}
+        <color attach="background" args={[skyColor]} />
+
         <XR store={store}>
-        
-        {/* 
-          XR ORIGIN - Controls where the user starts in VR/AR
-          This positions the user at a good viewing distance from the scene objects
-          Position [4, 1.6, 4] places the user:
-          - 4 units away on X-axis (to the right)
-          - 1.6 units up on Y-axis (average human eye height)
-          - 4 units away on Z-axis (forward from scene center)
-          This gives a nice diagonal view of both the cube and plant
-        */}
-        <XROrigin position={[4, 1.6, 4]} />
-        
-        {/* 
-          LIGHTING SETUP
-          We use multiple light sources to create depth and visual interest
-        */}
-        
-        {/* Ambient light provides soft, overall illumination without direction */}
-        <ambientLight intensity={0.4} />
-        
-        {/* Directional light simulates sunlight - comes from one direction */}
-        <directionalLight 
-          position={[10, 10, 5]}  // Position in 3D space [x, y, z]
-          intensity={1.0}         // How bright the light is
-          castShadow              // Enable this light to cast shadows
-        />
-        
-        {/* Point light radiates in all directions from a single point */}
-        <pointLight 
-          position={[-10, -10, -5]}  // Positioned opposite to main light
-          intensity={0.5}            // Dimmer than main light
-          color="#ffffff"            // Pure white light
-        />
-        
-        {/* Spot light creates a cone of light, like a flashlight */}
-        <spotLight
-          position={[0, 10, 0]}  // Directly above the scene
-          angle={0.3}            // Width of the light cone
-          penumbra={1}           // Softness of light edges (0 = sharp, 1 = very soft)
-          intensity={0.3}        // Gentle fill light
-          castShadow             // Enable shadow casting
-        />
-        
-        {/* 
-          3D OBJECTS
-          These are our interactive 3D elements in the scene
-        */}
-        
-        {/* Static orange cube positioned at the origin (0, 0, 0) */}
-        <Cube />
-        
-        {/* Interactive potted plant that can be clicked to teleport */}
-        <PottedPlant scale={10} />
-        
-        {/* 
-          SCENE HELPERS
-          Visual aids that help users understand the 3D space
-        */}
-        
-        {/* Grid floor provides spatial reference and depth perception */}
-        <Grid 
-          args={[20, 20]}           // Grid dimensions: 20x20 units
-          position={[0, -1, 0]}     // Positioned 1 unit below origin
-          cellSize={1}              // Each cell is 1x1 unit
-          cellThickness={0.5}       // Thin lines for individual cells
-          cellColor="#6f6f6f"       // Gray color for cell lines
-          sectionSize={5}           // Major grid lines every 5 cells
-          sectionThickness={1}      // Thicker lines for major sections
-          sectionColor="#9d4b4b"    // Reddish color for section lines
-          fadeDistance={25}         // Grid fades out at this distance
-          fadeStrength={1}          // How quickly the fade happens
-        />
-        
-        {/* 
-          CAMERA CONTROLS
-          OrbitControls allows users to navigate around the 3D scene
-          - Left click + drag: Rotate camera around the scene
-          - Right click + drag: Pan the camera
-          - Scroll wheel: Zoom in and out
-          Note: OrbitControls work in both regular 3D mode and XR mode
-        */}
-        <OrbitControls 
-          enablePan={true}      // Allow panning (moving the camera)
-          enableZoom={true}     // Allow zooming in/out
-          enableRotate={true}   // Allow rotating around the scene
-        />
-        
-        </XR> {/* End of XR wrapper - all 3D content above is now XR-enabled */}
+          {/* In VR you'll start standing inside the room, near the front */}
+          <XROrigin position={[0.5, 0, 2]} />
+
+          {/* Soft overall light. Brighter in the day, dim blue at night. */}
+          <ambientLight intensity={isNight ? 0.08 : 0.35} color={isNight ? '#8fa3ff' : '#ffffff'} />
+          {/* Sky light from above + ground bounce from below (feels more natural) */}
+          <hemisphereLight args={[isNight ? '#1b2440' : '#dfefff', '#8a7a66', isNight ? 0.1 : 0.5]} />
+
+          {/* THE ROOM — walls, window, door, furniture, lamp and sun */}
+          <Room isNight={isNight} onHover={setHint} />
+
+          {/*
+            CAMERA CONTROLS
+            - Left drag: orbit   - Right drag: pan   - Scroll: zoom
+            target: the point the camera orbits around (middle of the room)
+            maxPolarAngle: stops you going below the floor
+          */}
+          <OrbitControls
+            target={[0, 1.1, 0]}
+            enablePan
+            enableZoom
+            minDistance={2}
+            maxDistance={16}
+            maxPolarAngle={Math.PI / 2 - 0.05}
+          />
+        </XR>
       </Canvas>
+
+      {/*
+        ON-SCREEN UI (regular HTML, floating over the 3D canvas)
+        Tailwind classes are used for styling, like in the slides.
+      */}
+      <div className="absolute top-4 left-4 max-w-xs rounded-xl bg-white/85 p-4 text-sm text-neutral-800 shadow-lg backdrop-blur">
+        <h1 className="text-lg font-semibold">Studio Room</h1>
+        <p className="mb-2 text-neutral-600">An interactive section model. Click things in the room:</p>
+        <ul className="list-disc pl-5 text-neutral-700">
+          <li>Door — open / close</li>
+          <li>Window — raise / lower the blind</li>
+          <li>Pendant lamp — on / off</li>
+          <li>Chairs — rotate</li>
+          <li>Walls — change paint</li>
+          <li>Floor — change finish</li>
+        </ul>
+        <p className="mt-2 text-xs text-neutral-500">Drag to orbit · right-drag to pan · scroll to zoom</p>
+
+        {/* Day/Night toggle button */}
+        <button
+          onClick={() => setIsNight(!isNight)}
+          className="mt-3 w-full rounded-lg bg-neutral-900 px-3 py-2 text-white transition hover:bg-neutral-700"
+        >
+          {isNight ? '☀️ Switch to day' : '🌙 Switch to night'}
+        </button>
+      </div>
+
+      {/* HOVER HINT — only shows when you're pointing at something clickable */}
+      {hint && (
+        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-neutral-900/85 px-4 py-2 text-sm text-white shadow-lg">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
