@@ -20,8 +20,8 @@ const store = createXRStore();
 
 // Main homepage component
 export default function Home() {
-  // isNight: false = daytime (sun on), true = night (sun off, dark sky)
-  const [isNight, setIsNight] = useState(false);
+  // isNight: false = daytime (sun on). Change to true for night lighting.
+  const isNight = false;
   // hint: the label of whatever the mouse is currently pointing at
   const [hint, setHint] = useState<string | null>(null);
 
@@ -69,32 +69,6 @@ export default function Home() {
           />
         </XR>
       </Canvas>
-
-      {/*
-        ON-SCREEN UI (regular HTML, floating over the 3D canvas)
-        Tailwind classes are used for styling, like in the slides.
-      */}
-      <div className="absolute top-4 left-4 max-w-xs rounded-xl bg-white/85 p-4 text-sm text-neutral-800 shadow-lg backdrop-blur">
-        <h1 className="text-lg font-semibold">Studio Room</h1>
-        <p className="mb-2 text-neutral-600">An interactive section model. Click things in the room:</p>
-        <ul className="list-disc pl-5 text-neutral-700">
-          <li>Door — open / close</li>
-          <li>Window — raise / lower the blind</li>
-          <li>Pendant lamp — on / off</li>
-          <li>Chairs — rotate</li>
-          <li>Walls — change paint</li>
-          <li>Floor — change finish</li>
-        </ul>
-        <p className="mt-2 text-xs text-neutral-500">Drag to orbit · right-drag to pan · scroll to zoom</p>
-
-        {/* Day/Night toggle button */}
-        <button
-          onClick={() => setIsNight(!isNight)}
-          className="mt-3 w-full rounded-lg bg-neutral-900 px-3 py-2 text-white transition hover:bg-neutral-700"
-        >
-          {isNight ? '☀️ Switch to day' : '🌙 Switch to night'}
-        </button>
-      </div>
 
       {/* HOVER HINT — only shows when you're pointing at something clickable */}
       {hint && (
